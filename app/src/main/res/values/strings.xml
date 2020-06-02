@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">Honey I\'m Home!</string>
+    <string name="start_tracking">start tracking location</string>
+    <string name="stop_tracking">stop tracking</string>
+    <string name="rational">
+        We need location permission in order to know how close you are to your home!
+    </string>
+    <string name="location_information">
+       Latitude:  %1$d \n\nLongitude:  %1$d \n\nAccuracy:  %1$f
+    </string>
+    <string name="open_location_settings">\"open location settings\"</string>
+    <string name="gps_network_not_enabled">GPS network not enabled!</string>
+    <string name="Cancel">Cancel</string>
+
 </resources>
