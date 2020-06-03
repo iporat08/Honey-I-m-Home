@@ -18,9 +18,6 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
@@ -30,36 +27,33 @@ import static com.google.android.gms.location.LocationServices.getFusedLocationP
 public class LocationTracker {
 
     private Context context;
-//    private BroadcastReceiver br;
-    public LocationInfo locationInfo;
-    private boolean locationEnabled;
+    private LocationInfo homeLocation;
+    private LocationInfo locationInfo;
+    private boolean locating;
     private FusedLocationProviderClient mFusedLocationClient;
+    private LocationCallback locationCallback;
 
     private final static String TAG = "lack of permission";
     private final static String PERMISSION_ERROR_MSG = "app dose'nt have location permission";
+    private static final String STARTED = "started";
+    private static final String STOPPED = "stopped";
+    private static final String NEW_LOCATION = "new_location";
+    private static final String NO_LOCATION = "no_location";
 
 
     LocationTracker(Context context){
         this.context = context;
         mFusedLocationClient = getFusedLocationProviderClient(context);
         locationInfo = new LocationInfo();
-//        br = new BroadcastReceiver() {
-//            @Override
-//            public void onReceive(Context context, Intent intent) {
-//                if(LocationResult.hasResult(intent)){}
-//                Intent location = new Intent();
-//                intent.setAction("location_update");
-////                intent.putExtra()
-//
-//            }
-//        };
+        locating = false;
     }
 
-    public boolean startTracking(){
-        // todo - will start tracking the location and send a "started" broadcast intent
-
+    void startTracking(){
         if(hasPermissions()) {
             if(isLocationEnabled()){
+                if(mFusedLocationClient == null){
+                    mFusedLocationClient = getFusedLocationProviderClient(context);
+                }
                 mFusedLocationClient.getLastLocation().addOnCompleteListener(
                         new OnCompleteListener<Location>() {
                             @Override
@@ -67,37 +61,55 @@ public class LocationTracker {
                                 requestNewLocationData();
                             }
                         });
-                return true;
+            }
+            else{
+                Intent noLocationIntent = new Intent();
+                noLocationIntent.setAction(NO_LOCATION);
+                context.sendBroadcast(noLocationIntent);
             }
         }
-
-
-        Log.d(TAG, PERMISSION_ERROR_MSG);
-        return false;
-
-        // todo - The LocationTracker class should assume it has anything it needs in order to run.
-        //  but just to be on the safe side, in the LocationTracker's "startTracking()" method,
-        //  add a basic check that assert you have the runtime location permission. If yes continue
-        //  to track location, if not just log some error to logcat and don't do anything (optional
-        //  -send an "error" broadcast and listen to it in the activity would and show some error in
-        //  the UI).
+        else {
+            Log.d(TAG, PERMISSION_ERROR_MSG);
+            //todo send broadcast?
+        }
     }
 
-    public void onLocationChanged(Location location) {
+    void onLocationChanged(Location location) {
         locationInfo.setAccuracy(location.getAccuracy());
         locationInfo.setLatitude(location.getLatitude());
         locationInfo.setLongitude(location.getLongitude());
 
         Intent locationIntent = new Intent();
-        locationIntent.setAction(context.getString(R.string.new_location));
-        locationIntent.putExtra(context.getString(R.string.location_intent_key), location);
+        if(!locating){
+            locating = true;
+            locationIntent.setAction(STARTED);
+            locationIntent.putExtra(context.getString(R.string.location_intent_key), location); //todo static?
+        }
+        else {
+            locationIntent.setAction(NEW_LOCATION);
+            locationIntent.putExtra(context.getString(R.string.location_intent_key), location); //todo static?
+        }
         context.sendBroadcast(locationIntent);
     }
 
-    public void stopTracking(){
-        //todo - will stop tracking and send a "stopped" broadcast intent
+    /**
+     * todo
+     */
+    void stopTracking(){
+        if(mFusedLocationClient != null){
+            mFusedLocationClient.removeLocationUpdates(locationCallback);
+            mFusedLocationClient = null;
+        }
+        locating = false;
+        Intent noLocationIntent = new Intent();
+        noLocationIntent.setAction(STOPPED);
+        context.sendBroadcast(noLocationIntent);
     }
 
+    /**
+     * todo
+     * @return
+     */
     private boolean hasPermissions(){
         return ActivityCompat.checkSelfPermission(context,
                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
@@ -105,25 +117,28 @@ public class LocationTracker {
                 Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
+    /**
+     * todo
+     */
     private void requestNewLocationData(){
         LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(0); //todo maybe more? like 5000?
+        locationRequest.setInterval(0);
         locationRequest.setFastestInterval(0);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-        mFusedLocationClient.requestLocationUpdates(locationRequest, new LocationCallback(){
-                    @Override
-                    public void onLocationResult(LocationResult locationResult) {
-                        onLocationChanged(locationResult.getLastLocation());
-                    }
-                },
+        locationCallback = new LocationCallback(){
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                onLocationChanged(locationResult.getLastLocation());
+            }
+        };
+        mFusedLocationClient.requestLocationUpdates(locationRequest, locationCallback,
                 Looper.myLooper());
         }
 
-    public LocationInfo getLocationInfo(){
-        return locationInfo;
-    }
-
+    /**
+     * todo
+     * @return
+     */
     private boolean isLocationEnabled(){
         LocationManager lm = (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
         boolean gps_enabled = false;
@@ -137,14 +152,48 @@ public class LocationTracker {
             network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
         } catch(Exception ex) {}
 
-        if(!gps_enabled && !network_enabled) {
-            Intent noLocationIntent = new Intent();
-            noLocationIntent.setAction("no_location");
-            context.sendBroadcast(noLocationIntent);
-            return false;
-        }
-        else{
-            return true;
-        }
+        return gps_enabled && network_enabled;
     }
+
+    /**
+     * todo
+     */
+    void updateHome(){
+        homeLocation = new LocationInfo(locationInfo);
+    }
+
+    /**
+     * todo
+     * @param newHome
+     */
+    void updateHome(LocationInfo newHome){
+        homeLocation = newHome;
+    }
+
+    /**
+     * todo
+     */
+    void deleteHome(){
+        homeLocation = null;
+    }
+
+    //////////////////////////////////// Getters ///////////////////////////////////////////////////
+
+    /**
+     * todo
+     * @return
+     */
+    LocationInfo getLocationInfo(){
+        return locationInfo;
+    }
+
+    /**
+     * todo
+     * @return
+     */
+    LocationInfo getHomeLocation() {
+        return homeLocation;
+    }
+
+
 }

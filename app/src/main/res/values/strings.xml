@@ -8,10 +8,13 @@
     <string name="latitude">Latitude: </string>
     <string name="longitude">Longitude: </string>
     <string name="accuracy">Accuracy: </string>
+    <string name="home">Your home location is defined as (%1$f, %2$f) </string>
     <string name="open_location_settings">\"open location settings\"</string>
     <string name="gps_network_not_enabled">GPS network not enabled!</string>
     <string name="Cancel">Cancel</string>
-    <string name="new_location">new_location</string>
+
     <string name="location_intent_key">location</string>
+    <string name="set_location_as_home">set location as home</string>
+    <string name="clear_home">clear home</string>
 
 </resources>

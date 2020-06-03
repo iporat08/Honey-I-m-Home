@@ -7,29 +7,69 @@ public class LocationInfo {
     private double longitude;
     private float accuracy;
 
+    /**
+     * default constructor
+     */
+    LocationInfo(){}
+
+    /**
+     * todo
+     * @param other
+     */
+    LocationInfo(LocationInfo other){
+        latitude = other.getLatitude();
+       longitude = other.getLongitude();
+    }
+
     ////////////////////////////////// Getters /////////////////////////////////////////////////////
-    public double getLatitude() {
+
+    /**
+     * todo
+     * @return
+     */
+    double getLatitude() {
         return latitude;
     }
 
-    public double getLongitude() {
+    /**
+     * todo
+     * @return
+     */
+    double getLongitude() {
         return longitude;
     }
 
-    public float getAccuracy() {
+    /**
+     * todo
+     * @return
+     */
+    float getAccuracy() {
         return accuracy;
     }
 
     ////////////////////////////////// Setters /////////////////////////////////////////////////////
-    public void setLatitude(double latitude) {
+
+    /**
+     * todo
+     * @param latitude
+     */
+    void setLatitude(double latitude) {
         this.latitude = latitude;
     }
 
-    public void setLongitude(double longitude) {
+    /**
+     * todo
+     * @param longitude
+     */
+    void setLongitude(double longitude) {
         this.longitude = longitude;
     }
 
-    public void setAccuracy(float accuracy) {
+    /**
+     * todo
+     * @param accuracy
+     */
+    void setAccuracy(float accuracy) {
         this.accuracy = accuracy;
     }
 }
