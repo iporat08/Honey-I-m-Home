@@ -3,10 +3,12 @@ package com.idoporat.honeyimhome;
 import android.content.Context;
 
 public class LocationInfo {
+    ////////////////////////////////////// Data Members ////////////////////////////////////////////
     private double latitude;
     private double longitude;
     private float accuracy;
 
+    ///////////////////////////////////// Constructors /////////////////////////////////////////////
     /**
      * default constructor
      */
@@ -17,12 +19,13 @@ public class LocationInfo {
      * @param other another LocationInfo object
      */
     LocationInfo(LocationInfo other){
-        latitude = other.getLatitude();
-        longitude = other.getLongitude();
+        if(other != null) {
+            latitude = other.getLatitude();
+            longitude = other.getLongitude();
+        }
     }
 
-    ////////////////////////////////// Getters /////////////////////////////////////////////////////
-
+    ///////////////////////////////////////// Getters //////////////////////////////////////////////
     /**
      * @return latitude
      */
@@ -44,8 +47,7 @@ public class LocationInfo {
         return accuracy;
     }
 
-    ////////////////////////////////// Setters /////////////////////////////////////////////////////
-
+    ///////////////////////////////////////// Setters //////////////////////////////////////////////
     /**
      * Sets this.latitude to be newLatitude
      * @param newLatitude the new latitude

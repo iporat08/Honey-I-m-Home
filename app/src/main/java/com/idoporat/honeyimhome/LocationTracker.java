@@ -26,14 +26,7 @@ import static com.google.android.gms.location.LocationServices.getFusedLocationP
 
 public class LocationTracker {
 
-
-    private Context context;
-    private LocationInfo homeLocation;
-    private LocationInfo locationInfo;
-    private boolean locating;
-    private FusedLocationProviderClient mFusedLocationClient;
-    private LocationCallback locationCallback;
-
+    ////////////////////////////////////// Constants ///////////////////////////////////////////////
     private static final String LOCATION = "location";
     private final static String TAG = "lack of permission";
     private final static String PERMISSION_ERROR_MSG = "app dose'nt have location permission";
@@ -42,7 +35,15 @@ public class LocationTracker {
     private static final String NEW_LOCATION = "new_location";
     private static final String NO_LOCATION = "no_location";
 
-    ////////////////////////////////// Constructors ////////////////////////////////////////////////
+    ////////////////////////////////////// Data Members ////////////////////////////////////////////
+    private Context context;
+    private LocationInfo homeLocation;
+    private LocationInfo locationInfo;
+    private boolean locating;
+    private FusedLocationProviderClient mFusedLocationClient;
+    private LocationCallback locationCallback;
+
+    ///////////////////////////////////// Constructors /////////////////////////////////////////////
     /**
      * Constructor
      * @param context a context
@@ -84,6 +85,20 @@ public class LocationTracker {
     }
 
     /**
+     * Stops tracking the user's location
+     */
+    void stopTracking(){
+        if(mFusedLocationClient != null){
+            mFusedLocationClient.removeLocationUpdates(locationCallback);
+            mFusedLocationClient = null;
+        }
+        locating = false;
+        Intent noLocationIntent = new Intent();
+        noLocationIntent.setAction(STOPPED);
+        context.sendBroadcast(noLocationIntent);
+    }
+
+    /**
      * Handles location change of the device
      * @param location a Location object representing the net location
      */
@@ -106,20 +121,6 @@ public class LocationTracker {
     }
 
     /**
-     * Stops tracking the user's location
-     */
-    void stopTracking(){
-        if(mFusedLocationClient != null){
-            mFusedLocationClient.removeLocationUpdates(locationCallback);
-            mFusedLocationClient = null;
-        }
-        locating = false;
-        Intent noLocationIntent = new Intent();
-        noLocationIntent.setAction(STOPPED);
-        context.sendBroadcast(noLocationIntent);
-    }
-
-    /**
      * Requests location updates periodically
      */
     private void requestNewLocationData(){
@@ -137,7 +138,7 @@ public class LocationTracker {
                 Looper.myLooper());
         }
 
-    //////////////////////////////// Self Checks ///////////////////////////////////////////////////
+    ///////////////////////////////////// Self Checks //////////////////////////////////////////////
     /**
      * Checks whether or not the app has location permissions
      * @return true if it has, false otherwise.
@@ -146,7 +147,7 @@ public class LocationTracker {
         return ActivityCompat.checkSelfPermission(context,
                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(context,
-                        Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
     /**
@@ -169,7 +170,7 @@ public class LocationTracker {
         return gps_enabled && network_enabled;
     }
 
-    //////////////////////////////////// Setters ///////////////////////////////////////////////////
+    ///////////////////////////////////////// Setters //////////////////////////////////////////////
     /**
      * Updates the homeLocation according to the latest location
      */
@@ -192,7 +193,7 @@ public class LocationTracker {
         homeLocation = null;
     }
 
-    //////////////////////////////////// Getters ///////////////////////////////////////////////////
+    ///////////////////////////////////////// Getters //////////////////////////////////////////////
     /**
      * Returns locationInfo
      */

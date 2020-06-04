@@ -26,6 +26,7 @@ import com.google.gson.Gson;
 
 public class MainActivity extends AppCompatActivity {
 
+    ////////////////////////////////////// Constants ///////////////////////////////////////////////
     public static final String LATITUDE_TEXT = "latitudeText";
     public static final String LONGITUDE_TEXT = "longitudeText";
     public static final String ACCURACY_TEXT = "accuracyText";
@@ -49,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String TRACKING = "tracking";
     private LocationTracker locationTracker;
 
-
+    ////////////////////////////////////// Data Members ////////////////////////////////////////////
     private Button trackingButton;
     private Button setHomeButton;
     private Button clearHomeButton;
@@ -219,9 +220,9 @@ public class MainActivity extends AppCompatActivity {
     private void updateLocationView(){
         LocationInfo location = locationTracker.getLocationInfo();
         if(location != null){
-            latitudeView.setText(getString(R.string.latitude) + location.getLatitude());
-            longitudeView.setText(getString(R.string.longitude) + location.getLongitude());
-            accuracyView.setText(getString(R.string.accuracy) + location.getAccuracy());
+            latitudeView.setText(getString(R.string.latitude) + ' ' + location.getLatitude());
+            longitudeView.setText(getString(R.string.longitude) + ' ' + location.getLongitude());
+            accuracyView.setText(getString(R.string.accuracy) + ' ' + location.getAccuracy());
             latitudeView.setVisibility(View.VISIBLE);
             longitudeView.setVisibility(View.VISIBLE);
             accuracyView.setVisibility(View.VISIBLE);
@@ -272,7 +273,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //todo - Don't forget to clean all the location-tracking logic in your activity's onDestroy()!
 
         unregisterReceiver(br);
         if(tracking){
