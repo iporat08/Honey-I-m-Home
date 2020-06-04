@@ -26,10 +26,30 @@ import com.google.gson.Gson;
 
 public class MainActivity extends AppCompatActivity {
 
+    public static final String LATITUDE_TEXT = "latitudeText";
+    public static final String LONGITUDE_TEXT = "longitudeText";
+    public static final String ACCURACY_TEXT = "accuracyText";
+    public static final String HOME_TEXT = "homeText";
+    public static final String SET_HOME_BUTTON_TEXT = "setHomeButtonText";
+    public static final String TRACKING_BUTTON_TEXT = "trackingButtonText";
+    public static final String LATITUDE_VISIBILITY = "latitudeVisibility";
+    public static final String LONGITUDE_VISIBILITY = "longitudeVisibility";
+    public static final String ACCURACY_VISIBILITY = "accuracyVisibility";
+    public static final String HOME_VISIBILITY = "homeVisibility";
+    public static final String SET_HOME_BUTTON_VISIBILITY = "setHomeButtonVisibility";
+    public static final String CLEAR_HOME_BUTTON_VISIBILITY = "clearHomeButtonVisibility";
+    public static final String TRACKING_BUTTON_VISIBILITY = "trackingButtonVisibility";
+
+    private static final String LOCATION = "location";
+    static final String HOME = "homeString";
+    static final String STARTED = "started";
+    static final String STOPPED = "stopped";
+    static final String NEW_LOCATION = "new_location";
+    private static final String NO_LOCATION = "no_location";
+    public static final String TRACKING = "tracking";
     private LocationTracker locationTracker;
-//    private LocationInfo locationInfo;
-    private BroadcastReceiver br;
-    private final int REQUEST_CODE_PERMISSION_LOCATION = 1;
+
+
     private Button trackingButton;
     private Button setHomeButton;
     private Button clearHomeButton;
@@ -37,15 +57,12 @@ public class MainActivity extends AppCompatActivity {
     private TextView longitudeView;
     private TextView accuracyView;
     private TextView homeView;
+    private BroadcastReceiver br;
+    private final int REQUEST_CODE_PERMISSION_LOCATION = 1;
     private boolean tracking;
     private SharedPreferences sp;
     private Gson gson;
 
-    static final String HOME = "homeString";
-    static final String STARTED = "started";
-    static final String STOPPED = "stopped";
-    static final String NEW_LOCATION = "new_location";
-    private static final String NO_LOCATION = "no_location";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +77,9 @@ public class MainActivity extends AppCompatActivity {
         setViews();
     }
 
+    /**
+     * Sets the activity's Views and their properties.
+     */
     private void setViews() {
         latitudeView = findViewById(R.id.latitude_textView);
         latitudeView.setVisibility(View.INVISIBLE);
@@ -88,17 +108,15 @@ public class MainActivity extends AppCompatActivity {
                 homeView.setVisibility(View.INVISIBLE);
                 clearHomeButton.setVisibility(View.INVISIBLE);
                 SharedPreferences.Editor edit = sp.edit();
-                edit.remove(HOME);
-                edit.apply();
+                edit.remove(HOME).apply();
             }
         });
         trackingButton = findViewById(R.id.Start_tracking_button);
         trackingButton.setOnClickListener(new TrackingButtonListener());
     }
 
-
     /**
-     * todo
+     * creates the activity's broadcast receiver and it's filter and registers them.
      */
     private void setBroadcastReceiver() {
         br = new myBroadcastReceiver();
@@ -110,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * todo
+     * the onClickListener of trackingButton
      */
     private class TrackingButtonListener implements View.OnClickListener {
         @Override
@@ -133,55 +151,60 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * todo
+     * a BroadcastReceiver
      */
     private class myBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if(action == null){
-                return;
-            }
-            switch (action) {
-                case NEW_LOCATION:
-                    Location location = intent.getParcelableExtra(getString(R.string
-                            .location_intent_key));
-                    if (location != null) {
+            if(action != null){
+                switch (action) {
+                    case NEW_LOCATION:
+                        Location location = intent.getParcelableExtra(LOCATION);
+                        if (location != null) {
+                            updateLocationView();
+                        }
+                        break;
+                    case NO_LOCATION:
+                        noLocationDialog(context);
+                        break;
+                    case STARTED:
+                        tracking = true;
+                        trackingButton.setText(getString(R.string.stop_tracking));
                         updateLocationView();
-                    }
-                    break;
-                case NO_LOCATION:
-                    new AlertDialog.Builder(context).setMessage(R.string.gps_network_not_enabled)
-                            .setPositiveButton(R.string.open_location_settings,
-                                    new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface paramDialogInterface,
-                                                            int paramInt) {
-                                            MainActivity.this.startActivity(new Intent(Settings
-                                                    .ACTION_LOCATION_SOURCE_SETTINGS));
-                                        }
-                                    }).setNegativeButton(R.string.Cancel, null).show();
-                    break;
-                case STARTED:
-                    tracking = true;
-                    trackingButton.setText(getString(R.string.stop_tracking));
-                    updateLocationView();
-                    break;
-                case STOPPED:
-                    tracking = false;
-                    trackingButton.setText(getString(R.string.start_tracking));
-                    latitudeView.setVisibility(View.INVISIBLE);
-                    longitudeView.setVisibility(View.INVISIBLE);
-                    accuracyView.setVisibility(View.INVISIBLE);
-                    setHomeButton.setVisibility(View.INVISIBLE);
-                    break;
+                        break;
+                    case STOPPED:
+                        tracking = false;
+                        trackingButton.setText(getString(R.string.start_tracking));
+                        latitudeView.setVisibility(View.INVISIBLE);
+                        longitudeView.setVisibility(View.INVISIBLE);
+                        accuracyView.setVisibility(View.INVISIBLE);
+                        setHomeButton.setVisibility(View.INVISIBLE);
+                        break;
+                }
             }
+        }
+
+        /**
+         * Shows a dialog that says the location service is unavailable
+         * @param context a context
+         */
+        private void noLocationDialog(Context context) {
+            new AlertDialog.Builder(context).setMessage(R.string.gps_network_not_enabled)
+                .setPositiveButton(R.string.open_location_settings,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface paraDialogInterface, int paramInt) {
+                                MainActivity.this.startActivity(new Intent(Settings
+                                        .ACTION_LOCATION_SOURCE_SETTINGS));
+                            }
+                        }).setNegativeButton(R.string.Cancel, null).show();
         }
     }
 
     /**
-     * todo
-     * @return
+     * Checks whether or not the app has location permissions
+     * @return true if it has, false otherwise.
      */
     private boolean hasPermissions(){
         return ActivityCompat.checkSelfPermission(MainActivity.this,
@@ -191,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * todo
+     * Updates the UI regarding the current location according to locationTracker
      */
     private void updateLocationView(){
         LocationInfo location = locationTracker.getLocationInfo();
@@ -211,6 +234,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Updates the UI regarding the home location according to locationTracker
+     */
     private void updateHomeLocationView(){
         LocationInfo home = locationTracker.getHomeLocation();
         double latitude = home.getLatitude();
@@ -249,7 +275,9 @@ public class MainActivity extends AppCompatActivity {
         //todo - Don't forget to clean all the location-tracking logic in your activity's onDestroy()!
 
         unregisterReceiver(br);
-        locationTracker.stopTracking();
+        if(tracking){
+            locationTracker.stopTracking();
+        }
     }
 
     @Override
@@ -261,47 +289,54 @@ public class MainActivity extends AppCompatActivity {
             locationTracker.updateHome(gson.fromJson(homeString, LocationInfo.class));
             updateHomeLocationView();
         }
+
     }
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        outState.putString("latitudeText", latitudeView.getText().toString());
-        outState.putString("longitudeText", latitudeView.getText().toString());
+        outState.putBoolean(TRACKING, tracking);
 
-        latitudeView.setVisibility(View.INVISIBLE);
-        longitudeView = findViewById(R.id.longitude_textView);
-        longitudeView.setVisibility(View.INVISIBLE);
-        accuracyView = findViewById(R.id.accuracy_textView);
-        accuracyView.setVisibility(View.INVISIBLE);
-        homeView = findViewById(R.id.home_textView);
-        homeView.setVisibility(View.INVISIBLE);
+        outState.putString(LATITUDE_TEXT, latitudeView.getText().toString());
+        outState.putString(LONGITUDE_TEXT, longitudeView.getText().toString());
+        outState.putString(ACCURACY_TEXT, accuracyView.getText().toString());
+        outState.putString(HOME_TEXT, homeView.getText().toString());
+        outState.putString(SET_HOME_BUTTON_TEXT, setHomeButton.getText().toString());
+        outState.putString(TRACKING_BUTTON_TEXT, trackingButton.getText().toString());
 
-        setHomeButton = findViewById(R.id.set_home_button);
-        setHomeButton.setVisibility(View.INVISIBLE);
-        setHomeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                locationTracker.updateHome();
-                updateHomeLocationView();
-            }
-        });
-        clearHomeButton = findViewById(R.id.clear_home_button);
-        clearHomeButton.setVisibility(View.INVISIBLE);
-        clearHomeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                locationTracker.deleteHome();
-                homeView.setVisibility(View.INVISIBLE);
-                clearHomeButton.setVisibility(View.INVISIBLE);
-                SharedPreferences.Editor edit = sp.edit();
-                edit.remove(HOME);
-                edit.apply();
-            }
-        });
-        trackingButton = findViewById(R.id.Start_tracking_button);
-        trackingButton.setOnClickListener(new TrackingButtonListener());
+        outState.putInt(LATITUDE_VISIBILITY, latitudeView.getVisibility());
+        outState.putInt(LONGITUDE_VISIBILITY, longitudeView.getVisibility());
+        outState.putInt(ACCURACY_VISIBILITY, accuracyView.getVisibility());
+        outState.putInt(HOME_VISIBILITY, homeView.getVisibility());
+        outState.putInt(SET_HOME_BUTTON_VISIBILITY, setHomeButton.getVisibility());
+        outState.putInt(CLEAR_HOME_BUTTON_VISIBILITY, clearHomeButton.getVisibility());
+        outState.putInt(TRACKING_BUTTON_VISIBILITY, trackingButton.getVisibility());
+
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        tracking = savedInstanceState.getBoolean(TRACKING);
+        if(tracking){
+            locationTracker.startTracking();
+        }
+
+        latitudeView.setText(savedInstanceState.getString(LATITUDE_TEXT));
+        longitudeView.setText(savedInstanceState.getString(LONGITUDE_TEXT));
+        accuracyView.setText(savedInstanceState.getString(ACCURACY_TEXT));
+        homeView.setText(savedInstanceState.getString(HOME_TEXT));
+        setHomeButton.setText(savedInstanceState.getString(SET_HOME_BUTTON_TEXT));
+        trackingButton.setText(savedInstanceState.getString(TRACKING_BUTTON_TEXT));
+
+        latitudeView.setVisibility(savedInstanceState.getInt(LATITUDE_VISIBILITY));
+        longitudeView.setVisibility(savedInstanceState.getInt(LONGITUDE_VISIBILITY));
+        accuracyView.setVisibility(savedInstanceState.getInt(ACCURACY_VISIBILITY));
+        homeView.setVisibility(savedInstanceState.getInt(HOME_VISIBILITY));
+        setHomeButton.setVisibility(savedInstanceState.getInt(SET_HOME_BUTTON_VISIBILITY));
+        clearHomeButton.setVisibility(savedInstanceState.getInt(CLEAR_HOME_BUTTON_VISIBILITY));
+        trackingButton.setVisibility(savedInstanceState.getInt(TRACKING_BUTTON_VISIBILITY));
     }
 }
 

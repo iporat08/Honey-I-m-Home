@@ -13,35 +13,32 @@ public class LocationInfo {
     LocationInfo(){}
 
     /**
-     * todo
-     * @param other
+     * Copy constructor
+     * @param other another LocationInfo object
      */
     LocationInfo(LocationInfo other){
         latitude = other.getLatitude();
-       longitude = other.getLongitude();
+        longitude = other.getLongitude();
     }
 
     ////////////////////////////////// Getters /////////////////////////////////////////////////////
 
     /**
-     * todo
-     * @return
+     * @return latitude
      */
     double getLatitude() {
         return latitude;
     }
 
     /**
-     * todo
-     * @return
+     * @return longitude
      */
     double getLongitude() {
         return longitude;
     }
 
     /**
-     * todo
-     * @return
+     * @return accuracy
      */
     float getAccuracy() {
         return accuracy;
@@ -50,26 +47,26 @@ public class LocationInfo {
     ////////////////////////////////// Setters /////////////////////////////////////////////////////
 
     /**
-     * todo
-     * @param latitude
+     * Sets this.latitude to be newLatitude
+     * @param newLatitude the new latitude
      */
-    void setLatitude(double latitude) {
-        this.latitude = latitude;
+    void setLatitude(double newLatitude) {
+       latitude = newLatitude;
     }
 
     /**
-     * todo
-     * @param longitude
+     * Sets longitude to be newLongitude
+     * @param newLongitude the new longitude
      */
-    void setLongitude(double longitude) {
-        this.longitude = longitude;
+    void setLongitude(double newLongitude) {
+        longitude = newLongitude;
     }
 
     /**
-     * todo
-     * @param accuracy
+     * Sets accuracy to be newAccuracy
+     * @param newAccuracy the new accuracy
      */
-    void setAccuracy(float accuracy) {
-        this.accuracy = accuracy;
+    void setAccuracy(float newAccuracy) {
+        accuracy = newAccuracy;
     }
 }

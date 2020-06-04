@@ -26,6 +26,7 @@ import static com.google.android.gms.location.LocationServices.getFusedLocationP
 
 public class LocationTracker {
 
+
     private Context context;
     private LocationInfo homeLocation;
     private LocationInfo locationInfo;
@@ -33,6 +34,7 @@ public class LocationTracker {
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback locationCallback;
 
+    private static final String LOCATION = "location";
     private final static String TAG = "lack of permission";
     private final static String PERMISSION_ERROR_MSG = "app dose'nt have location permission";
     private static final String STARTED = "started";
@@ -40,7 +42,11 @@ public class LocationTracker {
     private static final String NEW_LOCATION = "new_location";
     private static final String NO_LOCATION = "no_location";
 
-
+    ////////////////////////////////// Constructors ////////////////////////////////////////////////
+    /**
+     * Constructor
+     * @param context a context
+     */
     LocationTracker(Context context){
         this.context = context;
         mFusedLocationClient = getFusedLocationProviderClient(context);
@@ -48,6 +54,10 @@ public class LocationTracker {
         locating = false;
     }
 
+    /////////////////////////////////// Tracking Logic Methods /////////////////////////////////////
+    /**
+     * Starts tracking location
+     */
     void startTracking(){
         if(hasPermissions()) {
             if(isLocationEnabled()){
@@ -70,11 +80,14 @@ public class LocationTracker {
         }
         else {
             Log.d(TAG, PERMISSION_ERROR_MSG);
-            //todo send broadcast?
         }
     }
 
-    void onLocationChanged(Location location) {
+    /**
+     * Handles location change of the device
+     * @param location a Location object representing the net location
+     */
+    private void onLocationChanged(Location location) {
         locationInfo.setAccuracy(location.getAccuracy());
         locationInfo.setLatitude(location.getLatitude());
         locationInfo.setLongitude(location.getLongitude());
@@ -83,17 +96,17 @@ public class LocationTracker {
         if(!locating){
             locating = true;
             locationIntent.setAction(STARTED);
-            locationIntent.putExtra(context.getString(R.string.location_intent_key), location); //todo static?
+            locationIntent.putExtra(LOCATION, location);
         }
         else {
             locationIntent.setAction(NEW_LOCATION);
-            locationIntent.putExtra(context.getString(R.string.location_intent_key), location); //todo static?
+            locationIntent.putExtra(LOCATION, location);
         }
         context.sendBroadcast(locationIntent);
     }
 
     /**
-     * todo
+     * Stops tracking the user's location
      */
     void stopTracking(){
         if(mFusedLocationClient != null){
@@ -107,18 +120,7 @@ public class LocationTracker {
     }
 
     /**
-     * todo
-     * @return
-     */
-    private boolean hasPermissions(){
-        return ActivityCompat.checkSelfPermission(context,
-                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(context,
-                Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    /**
-     * todo
+     * Requests location updates periodically
      */
     private void requestNewLocationData(){
         LocationRequest locationRequest = new LocationRequest();
@@ -135,9 +137,21 @@ public class LocationTracker {
                 Looper.myLooper());
         }
 
+    //////////////////////////////// Self Checks ///////////////////////////////////////////////////
     /**
-     * todo
-     * @return
+     * Checks whether or not the app has location permissions
+     * @return true if it has, false otherwise.
+     */
+    private boolean hasPermissions(){
+        return ActivityCompat.checkSelfPermission(context,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(context,
+                        Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Checks whether or not the location services are enabled.
+     * @return true if yes, false otherwise.
      */
     private boolean isLocationEnabled(){
         LocationManager lm = (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
@@ -155,41 +169,39 @@ public class LocationTracker {
         return gps_enabled && network_enabled;
     }
 
+    //////////////////////////////////// Setters ///////////////////////////////////////////////////
     /**
-     * todo
+     * Updates the homeLocation according to the latest location
      */
     void updateHome(){
         homeLocation = new LocationInfo(locationInfo);
     }
 
     /**
-     * todo
-     * @param newHome
+     * Updates the homeLocation to be newHome.
+     * @param newHome the new homeLocation to be
      */
     void updateHome(LocationInfo newHome){
         homeLocation = newHome;
     }
 
     /**
-     * todo
+     * Replaces homeLocation with null.
      */
     void deleteHome(){
         homeLocation = null;
     }
 
     //////////////////////////////////// Getters ///////////////////////////////////////////////////
-
     /**
-     * todo
-     * @return
+     * Returns locationInfo
      */
     LocationInfo getLocationInfo(){
         return locationInfo;
     }
 
     /**
-     * todo
-     * @return
+     * Returns homeLocation
      */
     LocationInfo getHomeLocation() {
         return homeLocation;
