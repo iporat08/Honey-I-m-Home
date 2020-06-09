@@ -3,6 +3,7 @@ package com.idoporat.honeyimhome;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import android.Manifest;
 import android.app.AlertDialog;
@@ -17,8 +18,10 @@ import android.location.Location;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.text.InputType;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,19 +30,19 @@ import com.google.gson.Gson;
 public class MainActivity extends AppCompatActivity {
 
     ////////////////////////////////////// Constants ///////////////////////////////////////////////
-    public static final String LATITUDE_TEXT = "latitudeText";
-    public static final String LONGITUDE_TEXT = "longitudeText";
-    public static final String ACCURACY_TEXT = "accuracyText";
-    public static final String HOME_TEXT = "homeText";
-    public static final String SET_HOME_BUTTON_TEXT = "setHomeButtonText";
-    public static final String TRACKING_BUTTON_TEXT = "trackingButtonText";
-    public static final String LATITUDE_VISIBILITY = "latitudeVisibility";
-    public static final String LONGITUDE_VISIBILITY = "longitudeVisibility";
-    public static final String ACCURACY_VISIBILITY = "accuracyVisibility";
-    public static final String HOME_VISIBILITY = "homeVisibility";
-    public static final String SET_HOME_BUTTON_VISIBILITY = "setHomeButtonVisibility";
-    public static final String CLEAR_HOME_BUTTON_VISIBILITY = "clearHomeButtonVisibility";
-    public static final String TRACKING_BUTTON_VISIBILITY = "trackingButtonVisibility";
+    private static final String LATITUDE_TEXT = "latitudeText";
+    private static final String LONGITUDE_TEXT = "longitudeText";
+    private static final String ACCURACY_TEXT = "accuracyText";
+    private static final String HOME_TEXT = "homeText";
+    private static final String SET_HOME_BUTTON_TEXT = "setHomeButtonText";
+    private static final String TRACKING_BUTTON_TEXT = "trackingButtonText";
+    private static final String LATITUDE_VISIBILITY = "latitudeVisibility";
+    private static final String LONGITUDE_VISIBILITY = "longitudeVisibility";
+    private static final String ACCURACY_VISIBILITY = "accuracyVisibility";
+    private static final String HOME_VISIBILITY = "homeVisibility";
+    private static final String SET_HOME_BUTTON_VISIBILITY = "setHomeButtonVisibility";
+    private static final String CLEAR_HOME_BUTTON_VISIBILITY = "clearHomeButtonVisibility";
+    private static final String TRACKING_BUTTON_VISIBILITY = "trackingButtonVisibility";
 
     private static final String LOCATION = "location";
     static final String HOME = "homeString";
@@ -48,18 +51,28 @@ public class MainActivity extends AppCompatActivity {
     static final String NEW_LOCATION = "new_location";
     private static final String NO_LOCATION = "no_location";
     public static final String TRACKING = "tracking";
+    private static final int REQUEST_CODE_SEND_SMS = 2;
+    public static final String PHONE_NUMBER = "phone_number";
+    public static final String POST_PC_ACTION_SEND_SMS = "sms send action";
+    private final int REQUEST_CODE_PERMISSION_LOCATION = 1;
     private LocationTracker locationTracker;
+    private String savedPhoneNumber = "";
+
+    public static  String PHONE = "phone";
+    public static  String CONTENT = "content";
 
     ////////////////////////////////////// Data Members ////////////////////////////////////////////
     private Button trackingButton;
     private Button setHomeButton;
     private Button clearHomeButton;
+    private Button setNumberButton;
+    private Button testSmsButton;
+    private Button deleteNumberButton;
     private TextView latitudeView;
     private TextView longitudeView;
     private TextView accuracyView;
     private TextView homeView;
     private BroadcastReceiver br;
-    private final int REQUEST_CODE_PERMISSION_LOCATION = 1;
     private boolean tracking;
     private SharedPreferences sp;
     private Gson gson;
@@ -90,7 +103,13 @@ public class MainActivity extends AppCompatActivity {
         accuracyView.setVisibility(View.INVISIBLE);
         homeView = findViewById(R.id.home_textView);
         homeView.setVisibility(View.INVISIBLE);
+        setButtons();
+    }
 
+    /**
+     * Sets the activity's Buttons and their properties.
+     */
+    private void setButtons() {
         setHomeButton = findViewById(R.id.set_home_button);
         setHomeButton.setVisibility(View.INVISIBLE);
         setHomeButton.setOnClickListener(new View.OnClickListener() {
@@ -112,8 +131,91 @@ public class MainActivity extends AppCompatActivity {
                 edit.remove(HOME).apply();
             }
         });
+
+        setNumberButton = findViewById(R.id.set_number_button);
+        setNumberButton.setOnClickListener(new SetNumberListener());
+
+        testSmsButton = findViewById(R.id.test_sms_button);
+        testSmsButton.setOnClickListener(new TestSmsListener());
         trackingButton = findViewById(R.id.Start_tracking_button);
         trackingButton.setOnClickListener(new TrackingButtonListener());
+        deleteNumberButton = findViewById(R.id.delete_phone_number_button);
+        deleteNumberButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences.Editor edit = sp.edit();
+                edit.remove(PHONE_NUMBER).apply();
+                deleteNumberButton.setVisibility(View.INVISIBLE);
+                testSmsButton.setVisibility(View.INVISIBLE);
+            }
+        });
+
+    }
+
+    /**
+     * todo
+     */
+    public class TestSmsListener implements View.OnClickListener{
+
+        @Override
+        public void onClick(View v) {
+            if(savedPhoneNumber != null && !savedPhoneNumber.equals("")){
+                Intent intent = new Intent(POST_PC_ACTION_SEND_SMS);
+                intent.putExtra(PHONE, savedPhoneNumber);
+                intent.putExtra(CONTENT, getString(R.string.message_content));
+                LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(intent);
+            }
+        }
+    }
+
+    /**
+     * todo
+     */
+    public class SetNumberListener implements View.OnClickListener {
+        @Override
+        public void onClick(View v) {
+            boolean hasPermissions = ActivityCompat.checkSelfPermission(MainActivity.this,
+                    Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED;
+
+            if(hasPermissions){
+                showSmsDialog();
+            }
+            else{
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.SEND_SMS}, REQUEST_CODE_SEND_SMS);
+            }
+        }
+    }
+
+    private void showSmsDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("Title");
+
+        // Set up the input
+        final EditText input = new EditText(MainActivity.this);
+        // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+
+        // Set up the buttons
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                savedPhoneNumber = input.getText().toString();
+                SharedPreferences.Editor edit = sp.edit();
+                edit.putString(PHONE_NUMBER, savedPhoneNumber).apply();
+                deleteNumberButton.setVisibility(View.VISIBLE);
+                testSmsButton.setVisibility(View.VISIBLE);
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
     }
 
     /**
@@ -262,7 +364,19 @@ public class MainActivity extends AppCompatActivity {
             }
             else{ //todo - shouldShowRequestPermissionRational?
                 Context context = getApplicationContext();
-                CharSequence text = getString(R.string.rational);
+                CharSequence text = getString(R.string.location_rational);
+                int duration = Toast.LENGTH_LONG;
+                Toast toast = Toast.makeText(context, text, duration);
+                toast.show();
+            }
+        }
+        if(requestCode == REQUEST_CODE_SEND_SMS){
+            if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                showSmsDialog();
+            }
+            else{ //todo - shouldShowRequestPermissionRational?
+                Context context = getApplicationContext();
+                CharSequence text = getString(R.string.sms_rational);
                 int duration = Toast.LENGTH_LONG;
                 Toast toast = Toast.makeText(context, text, duration);
                 toast.show();
@@ -288,6 +402,11 @@ public class MainActivity extends AppCompatActivity {
         if(homeString != null){
             locationTracker.updateHome(gson.fromJson(homeString, LocationInfo.class));
             updateHomeLocationView();
+        }
+
+        savedPhoneNumber = sp.getString(PHONE_NUMBER, null);
+        if(savedPhoneNumber != null && !savedPhoneNumber.equals("")){
+            testSmsButton.setVisibility(View.VISIBLE);
         }
 
     }
