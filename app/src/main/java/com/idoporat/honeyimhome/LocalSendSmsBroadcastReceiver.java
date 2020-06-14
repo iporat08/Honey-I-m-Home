@@ -22,6 +22,7 @@ public class LocalSendSmsBroadcastReceiver extends BroadcastReceiver {
     public static  String PHONE = "phone";
     public static  String CONTENT = "content";
 
+
     @Override
     public void onReceive(Context context, Intent intent) {
         boolean hasPermissions = ActivityCompat.checkSelfPermission(context,
@@ -38,7 +39,7 @@ public class LocalSendSmsBroadcastReceiver extends BroadcastReceiver {
         createNotificationChannel(context);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, SMS_C_ID)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
-//                .setContentTitle("Sending SMS")
+//                .setContentTitle("Sending SMS") todo
                 .setContentText("sending sms to " + number + ": " + message)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 

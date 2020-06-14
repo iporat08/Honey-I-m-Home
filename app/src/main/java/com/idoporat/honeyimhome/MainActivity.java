@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private final int REQUEST_CODE_PERMISSION_LOCATION = 1;
     private LocationTracker locationTracker;
     private String savedPhoneNumber = "";
+    private final static int ACTIVITY = 1;
 
     public static  String PHONE = "phone";
     public static  String CONTENT = "content";
@@ -86,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
         gson = new Gson();
         sp = PreferenceManager.getDefaultSharedPreferences(this);
         tracking = false;
-        locationTracker = new LocationTracker(this);
+        locationTracker = new LocationTracker(this, ACTIVITY);
         setBroadcastReceiver();
         setViews();
     }
@@ -131,10 +132,8 @@ public class MainActivity extends AppCompatActivity {
                 edit.remove(HOME).apply();
             }
         });
-
         setNumberButton = findViewById(R.id.set_number_button);
         setNumberButton.setOnClickListener(new SetNumberListener());
-
         testSmsButton = findViewById(R.id.test_sms_button);
         testSmsButton.setOnClickListener(new TestSmsListener());
         trackingButton = findViewById(R.id.Start_tracking_button);
@@ -214,7 +213,6 @@ public class MainActivity extends AppCompatActivity {
                 dialog.cancel();
             }
         });
-
         builder.show();
     }
 
@@ -272,17 +270,21 @@ public class MainActivity extends AppCompatActivity {
                         noLocationDialog(context);
                         break;
                     case STARTED:
-                        tracking = true;
-                        trackingButton.setText(getString(R.string.stop_tracking));
-                        updateLocationView();
+                        if(!tracking) {
+                            tracking = true;
+                            trackingButton.setText(getString(R.string.stop_tracking));
+                            updateLocationView();
+                        }
                         break;
                     case STOPPED:
-                        tracking = false;
-                        trackingButton.setText(getString(R.string.start_tracking));
-                        latitudeView.setVisibility(View.INVISIBLE);
-                        longitudeView.setVisibility(View.INVISIBLE);
-                        accuracyView.setVisibility(View.INVISIBLE);
-                        setHomeButton.setVisibility(View.INVISIBLE);
+                        if(tracking){
+                            tracking = false;
+                            trackingButton.setText(getString(R.string.start_tracking));
+                            latitudeView.setVisibility(View.INVISIBLE);
+                            longitudeView.setVisibility(View.INVISIBLE);
+                            accuracyView.setVisibility(View.INVISIBLE);
+                            setHomeButton.setVisibility(View.INVISIBLE);
+                        }
                         break;
                 }
             }
@@ -403,16 +405,14 @@ public class MainActivity extends AppCompatActivity {
             locationTracker.updateHome(gson.fromJson(homeString, LocationInfo.class));
             updateHomeLocationView();
         }
-
         savedPhoneNumber = sp.getString(PHONE_NUMBER, null);
         if(savedPhoneNumber != null && !savedPhoneNumber.equals("")){
             testSmsButton.setVisibility(View.VISIBLE);
         }
-
     }
 
     @Override
-    protected void onSaveInstanceState(@NonNull Bundle outState) {
+    protected void onSaveInstanceState(@NonNull Bundle outState) { //todo - lots of work here
         super.onSaveInstanceState(outState);
 
         outState.putBoolean(TRACKING, tracking);
@@ -435,7 +435,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) { //todo - lots of work here
         super.onRestoreInstanceState(savedInstanceState);
         tracking = savedInstanceState.getBoolean(TRACKING);
         if(tracking){

@@ -23,6 +23,7 @@
     <string name="clear_home">clear home</string>
     <string name="message_content">Honey I\'m Sending a Test Message!</string>
     <string name="delete_phone_number">Delete phone number</string>
+    <string name="home_message">Honey I\'m Home!</string>
 
 
 </resources>

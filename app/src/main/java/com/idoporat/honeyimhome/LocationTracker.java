@@ -26,6 +26,7 @@ import static com.google.android.gms.location.LocationServices.getFusedLocationP
 
 public class LocationTracker {
 
+    private static final String STOPPED_2 = "stopped_2";
     ////////////////////////////////////// Constants ///////////////////////////////////////////////
     private static final String LOCATION = "location";
     private final static String TAG = "lack of permission";
@@ -33,6 +34,7 @@ public class LocationTracker {
     private static final String STARTED = "started";
     private static final String STOPPED = "stopped";
     private static final String NEW_LOCATION = "new_location";
+    private static final String NEW_LOCATION_2 = "new_location_2";
     private static final String NO_LOCATION = "no_location";
 
     ////////////////////////////////////// Data Members ////////////////////////////////////////////
@@ -42,13 +44,19 @@ public class LocationTracker {
     private boolean locating;
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback locationCallback;
+    private final int receiver;
+
+    private final static int APPLICATION = 0;
+    private final static int ACTIVITY = 1;
+
 
     ///////////////////////////////////// Constructors /////////////////////////////////////////////
     /**
      * Constructor
      * @param context a context
      */
-    LocationTracker(Context context){
+    LocationTracker(Context context, int receiver){
+        this.receiver = receiver;
         this.context = context;
         mFusedLocationClient = getFusedLocationProviderClient(context);
         locationInfo = new LocationInfo();
@@ -74,9 +82,11 @@ public class LocationTracker {
                         });
             }
             else{
-                Intent noLocationIntent = new Intent();
-                noLocationIntent.setAction(NO_LOCATION);
-                context.sendBroadcast(noLocationIntent);
+                if(receiver == ACTIVITY) {
+                    Intent noLocationIntent = new Intent();
+                    noLocationIntent.setAction(NO_LOCATION);
+                    context.sendBroadcast(noLocationIntent);
+                }
             }
         }
         else {
@@ -89,12 +99,15 @@ public class LocationTracker {
      */
     void stopTracking(){
         if(mFusedLocationClient != null){
-            mFusedLocationClient.removeLocationUpdates(locationCallback);
-            mFusedLocationClient = null;
+            if(locationCallback != null) {
+                mFusedLocationClient.removeLocationUpdates(locationCallback);
+                mFusedLocationClient = null;
+            }
         }
         locating = false;
+        String action = receiver == ACTIVITY ? STOPPED : STOPPED_2;
         Intent noLocationIntent = new Intent();
-        noLocationIntent.setAction(STOPPED);
+        noLocationIntent.setAction(action);
         context.sendBroadcast(noLocationIntent);
     }
 
@@ -108,13 +121,16 @@ public class LocationTracker {
         locationInfo.setLongitude(location.getLongitude());
 
         Intent locationIntent = new Intent();
+
         if(!locating){
+            String action = (receiver == ACTIVITY) ? STARTED : NEW_LOCATION_2;
             locating = true;
-            locationIntent.setAction(STARTED);
+            locationIntent.setAction(action);
             locationIntent.putExtra(LOCATION, location);
         }
         else {
-            locationIntent.setAction(NEW_LOCATION);
+            String action = (receiver == ACTIVITY) ? NEW_LOCATION : NEW_LOCATION_2;
+            locationIntent.setAction(action);
             locationIntent.putExtra(LOCATION, location);
         }
         context.sendBroadcast(locationIntent);
