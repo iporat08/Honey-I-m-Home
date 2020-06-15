@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,7 +25,7 @@ import com.google.gson.Gson;
 
 public class LocationWorker extends ListenableWorker {
 
-    public static final String PREVIOUS = "previous";
+    private static final String PREVIOUS = "previous";
     private LocationTracker locationTracker;
     private Context context;
     private CallbackToFutureAdapter.Completer<Result> callback = null;
@@ -57,7 +58,7 @@ public class LocationWorker extends ListenableWorker {
     @NonNull
     @Override
     public ListenableFuture<Result> startWork() {
-
+        Log.e("start", "worker started");
         ListenableFuture<Result> future =
                 CallbackToFutureAdapter.getFuture(new CallbackToFutureAdapter.Resolver<Result>(){
             @Nullable
@@ -123,30 +124,40 @@ public class LocationWorker extends ListenableWorker {
                             }
                         }
                     }
-                    SharedPreferences.Editor edit = sp.edit();
-                    edit.putString(PREVIOUS, gson.toJson(current)).apply();
-                    context.unregisterReceiver(receiver);
-                    if(callback != null){
-                        callback.set(Result.success());
-                    }
+                    finishWork(context, current);
                 }
             }
         }
+
+        private void finishWork(Context context, Location current) {
+            SharedPreferences.Editor edit = sp.edit();
+            edit.putString(PREVIOUS, gson.toJson(current)).apply();
+            context.unregisterReceiver(receiver);
+            if(callback != null){
+                callback.set(Result.success());
+            }
+        }
+
+        /**
+         * Calculates the distance between a Location and an InfoLocation objects
+         * @param current
+         * @param homeLocation
+         * @return
+         */
+        private float[] calculateDistance(Location current, LocationInfo homeLocation) {
+            double hLatitude = homeLocation.getLatitude();
+            double hLongitude = homeLocation.getLongitude();
+            double cLatitude = current.getLatitude();
+            double cLongitude = current.getLongitude();
+            float[] results = new float[1];
+            Location.distanceBetween(hLatitude, hLongitude, cLatitude, cLongitude, results);
+            return results;
+        }
     }
 
-    private float[] calculateDistance(Location current, LocationInfo homeLocation) {
-        double hLatitude = homeLocation.getLatitude();
-        double hLongitude = homeLocation.getLongitude();
-        double cLatitude = current.getLatitude();
-        double cLongitude = current.getLongitude();
-        float[] results = new float[1];
-        Location.distanceBetween(hLatitude, hLongitude, cLatitude,
-                cLongitude, results);
-        return results;
-    }
 
     /**
-     * Checks whether or not the app has location permissions
+     * Checks whether or not the app has location and SMS permissions
      * @return true if it has, false otherwise.
      */
     private boolean hasPermissions(){
