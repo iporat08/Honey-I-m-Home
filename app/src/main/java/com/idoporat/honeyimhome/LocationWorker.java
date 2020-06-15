@@ -17,6 +17,7 @@ import androidx.concurrent.futures.CallbackToFutureAdapter;
 import androidx.core.app.ActivityCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.work.ListenableWorker;
+import androidx.work.WorkManager;
 import androidx.work.WorkerParameters;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -29,7 +30,7 @@ public class LocationWorker extends ListenableWorker {
     private LocationTracker locationTracker;
     private Context context;
     private CallbackToFutureAdapter.Completer<Result> callback = null;
-    private SharedPreferences sp;
+//    private SharedPreferences sp;
     private Gson gson;
     private BroadcastReceiver receiver;
     private String phone = null;
@@ -47,11 +48,16 @@ public class LocationWorker extends ListenableWorker {
     private final static int APPLICATION = 0;
 
 
+    /**
+     * Constructor
+     * @param context context
+     * @param w WorkerParameters
+     */
     public LocationWorker(Context context, WorkerParameters w){
         super(context, w);
         this.context = context;
         locationTracker = new LocationTracker(this.context, APPLICATION);
-        sp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+//        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         gson = new Gson();
     }
 
@@ -71,6 +77,8 @@ public class LocationWorker extends ListenableWorker {
         });
 
         if(hasPermissions()){
+            SharedPreferences sp =
+                    PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
             homeString = sp.getString(HOME, null);
             phone = sp.getString(PHONE_NUMBER, null);
             if(homeString != null && phone != null){
@@ -86,13 +94,19 @@ public class LocationWorker extends ListenableWorker {
         return future;
     }
 
+    /**
+     * Sets and Registers a LocationWorkerReceiver
+     */
     private void placeReceiver() {
         receiver = new LocationWorkerReceiver();
         IntentFilter filter = new IntentFilter(NEW_LOCATION_2);
         getApplicationContext().registerReceiver(receiver, filter);
     }
 
-    private void sendSMS(Context context) {
+    /**
+     * Sends an SMS broadcast
+     */
+    private void sendSMS() {
         Intent smsIntent = new Intent(POST_PC_ACTION_SEND_SMS);
         smsIntent.putExtra(PHONE, phone);
         smsIntent.putExtra(CONTENT, context.getString(R.string.home_message));
@@ -103,46 +117,51 @@ public class LocationWorker extends ListenableWorker {
     private class LocationWorkerReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            SharedPreferences sp =
+                             PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
             String last = sp.getString(PREVIOUS, null);
-            String action = intent.getAction();
-            if (action != null) {
-                if (NEW_LOCATION_2.equals(action)) {
-                    Location current = intent.getParcelableExtra(LOCATION);
-                    if (current != null && current.getAccuracy() < 50) {
-                        locationTracker.stopTracking();
-                        if(last != null) {
-                            Location previous = gson.fromJson(last, Location.class);
-                            if (current.distanceTo(previous) >= 50) {
-                                {
-                                    LocationInfo homeLocation =
-                                                    gson.fromJson(homeString, LocationInfo.class);
-                                    float[] results = calculateDistance(current, homeLocation);
-                                    if ( results[0] < 50) {
-                                        sendSMS(context);
-                                    }
-                                }
-                            }
+            Location current = intent.getParcelableExtra(LOCATION);
+            if (current != null && current.getAccuracy() < 50) {
+                locationTracker.stopTracking();
+                if(last != null) {
+                    Location previous = gson.fromJson(last, Location.class);
+                    if (current.distanceTo(previous) >= 50) {
+
+                        LocationInfo homeLocation = gson.fromJson(homeString, LocationInfo.class);
+                        float[] results = calculateDistance(current, homeLocation);
+                        if ( results[0] < 50) {
+                            sendSMS();
                         }
+                        results = null; // todo needed?
                     }
-                    finishWork(context, current);
                 }
             }
+            finishWork(current);
         }
 
-        private void finishWork(Context context, Location current) {
+        /**
+         * Stores in the SP the current locations as the previous one and unregisters the receiver
+         * of the class.
+         * @param current
+         */
+        private void finishWork(Location current) {
+            SharedPreferences sp =
+                    PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
             SharedPreferences.Editor edit = sp.edit();
-            edit.putString(PREVIOUS, gson.toJson(current)).apply();
+            String newPrevious = gson.toJson(current);
+            edit.putString(PREVIOUS, newPrevious).apply();
             context.unregisterReceiver(receiver);
             if(callback != null){
                 callback.set(Result.success());
             }
+//            WorkManager.getInstance(context).cancelAllWork(); //todo
         }
 
         /**
          * Calculates the distance between a Location and an InfoLocation objects
-         * @param current
-         * @param homeLocation
-         * @return
+         * @param current the current location
+         * @param homeLocation home location as saved in the SP
+         * @return the distance between the two
          */
         private float[] calculateDistance(Location current, LocationInfo homeLocation) {
             double hLatitude = homeLocation.getLatitude();
@@ -154,7 +173,6 @@ public class LocationWorker extends ListenableWorker {
             return results;
         }
     }
-
 
     /**
      * Checks whether or not the app has location and SMS permissions

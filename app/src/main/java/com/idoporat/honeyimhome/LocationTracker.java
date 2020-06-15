@@ -51,9 +51,11 @@ public class LocationTracker {
 
 
     ///////////////////////////////////// Constructors /////////////////////////////////////////////
+
     /**
      * Constructor
      * @param context a context
+     * @param receiver who's supposed to receive the broadcasts - ACTIVITY or APPLICATION
      */
     LocationTracker(Context context, int receiver){
         this.receiver = receiver;
@@ -102,6 +104,7 @@ public class LocationTracker {
             if(locationCallback != null) {
                 mFusedLocationClient.removeLocationUpdates(locationCallback);
                 mFusedLocationClient = null;
+//                locationCallback = null; // todo check
             }
         }
         locating = false;
@@ -119,7 +122,6 @@ public class LocationTracker {
         locationInfo.setAccuracy(location.getAccuracy());
         locationInfo.setLatitude(location.getLatitude());
         locationInfo.setLongitude(location.getLongitude());
-
         Intent locationIntent = new Intent();
 
         if(!locating){
@@ -174,7 +176,6 @@ public class LocationTracker {
         LocationManager lm = (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
         boolean gps_enabled = false;
         boolean network_enabled = false;
-
         try {
             gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
         } catch(Exception ex) {}
@@ -223,6 +224,4 @@ public class LocationTracker {
     LocationInfo getHomeLocation() {
         return homeLocation;
     }
-
-
 }

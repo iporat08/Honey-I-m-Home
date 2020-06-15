@@ -83,7 +83,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         gson = new Gson();
         sp = PreferenceManager.getDefaultSharedPreferences(this);
         tracking = false;
@@ -152,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * todo
+     * An onClick listener for testSmsButton.
      */
     public class TestSmsListener implements View.OnClickListener{
 
@@ -168,14 +167,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * todo
+     * An onClick listener for setNumberButton.
      */
     public class SetNumberListener implements View.OnClickListener {
         @Override
         public void onClick(View v) {
             boolean hasPermissions = ActivityCompat.checkSelfPermission(MainActivity.this,
                     Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED;
-
             if(hasPermissions){
                 showSmsDialog();
             }
@@ -186,17 +184,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Shows SMS dialog
+     */
     private void showSmsDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Title");
-
-        // Set up the input
         final EditText input = new EditText(MainActivity.this);
-        // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
         input.setInputType(InputType.TYPE_CLASS_TEXT);
         builder.setView(input);
 
-        // Set up the buttons
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -270,24 +267,38 @@ public class MainActivity extends AppCompatActivity {
                         noLocationDialog(context);
                         break;
                     case STARTED:
-                        if(!tracking) {
-                            tracking = true;
-                            trackingButton.setText(getString(R.string.stop_tracking));
-                            updateLocationView();
-                        }
+                        handleStartedCase();
                         break;
                     case STOPPED:
                         if(tracking){
-                            tracking = false;
-                            trackingButton.setText(getString(R.string.start_tracking));
-                            latitudeView.setVisibility(View.INVISIBLE);
-                            longitudeView.setVisibility(View.INVISIBLE);
-                            accuracyView.setVisibility(View.INVISIBLE);
-                            setHomeButton.setVisibility(View.INVISIBLE);
+                            handleStoppedCase();
                         }
                         break;
                 }
             }
+        }
+
+        /**
+         * Handles the STARTED case of the myBroadcastReceiver's onReceive's switch
+         */
+        private void handleStartedCase() {
+            if(!tracking) {
+                tracking = true;
+                trackingButton.setText(getString(R.string.stop_tracking));
+                updateLocationView();
+            }
+        }
+
+        /**
+         * Handles the STOPPED case of the myBroadcastReceiver's onReceive's switch
+         */
+        private void handleStoppedCase() {
+            tracking = false;
+            trackingButton.setText(getString(R.string.start_tracking));
+            latitudeView.setVisibility(View.INVISIBLE);
+            longitudeView.setVisibility(View.INVISIBLE);
+            accuracyView.setVisibility(View.INVISIBLE);
+            setHomeButton.setVisibility(View.INVISIBLE);
         }
 
         /**
@@ -364,26 +375,30 @@ public class MainActivity extends AppCompatActivity {
             if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
                 locationTracker.startTracking();
             }
-            else{ //todo - shouldShowRequestPermissionRational?
-                Context context = getApplicationContext();
-                CharSequence text = getString(R.string.location_rational);
-                int duration = Toast.LENGTH_LONG;
-                Toast toast = Toast.makeText(context, text, duration);
-                toast.show();
+            else{
+                showWeNeedPermissionMessage(R.string.location_rational);
             }
         }
         if(requestCode == REQUEST_CODE_SEND_SMS){
             if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
                 showSmsDialog();
             }
-            else{ //todo - shouldShowRequestPermissionRational?
-                Context context = getApplicationContext();
-                CharSequence text = getString(R.string.sms_rational);
-                int duration = Toast.LENGTH_LONG;
-                Toast toast = Toast.makeText(context, text, duration);
-                toast.show();
+            else{
+                showWeNeedPermissionMessage(R.string.sms_rational);
             }
         }
+    }
+
+    /**
+     * Shows a message asking for some permission
+     * @param message the message to be shown
+     */
+    private void showWeNeedPermissionMessage(int message) {
+        Context context = getApplicationContext();
+        CharSequence text = getString(message);
+        int duration = Toast.LENGTH_LONG;
+        Toast toast = Toast.makeText(context, text, duration);
+        toast.show();
     }
 
     @Override
@@ -412,7 +427,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onSaveInstanceState(@NonNull Bundle outState) { //todo - lots of work here
+    protected void onSaveInstanceState(@NonNull Bundle outState) { //todo - lots of work here?
         super.onSaveInstanceState(outState);
 
         outState.putBoolean(TRACKING, tracking);
