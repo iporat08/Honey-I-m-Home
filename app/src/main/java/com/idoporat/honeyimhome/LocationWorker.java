@@ -132,7 +132,7 @@ public class LocationWorker extends ListenableWorker {
                         if ( results[0] < 50) {
                             sendSMS();
                         }
-                        results = null; // todo needed?
+                        results = null;
                     }
                 }
             }
@@ -154,7 +154,6 @@ public class LocationWorker extends ListenableWorker {
             if(callback != null){
                 callback.set(Result.success());
             }
-//            WorkManager.getInstance(context).cancelAllWork(); //todo
         }
 
         /**

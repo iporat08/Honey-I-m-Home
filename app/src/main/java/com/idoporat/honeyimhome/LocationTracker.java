@@ -104,7 +104,6 @@ public class LocationTracker {
             if(locationCallback != null) {
                 mFusedLocationClient.removeLocationUpdates(locationCallback);
                 mFusedLocationClient = null;
-//                locationCallback = null; // todo check
             }
         }
         locating = false;
